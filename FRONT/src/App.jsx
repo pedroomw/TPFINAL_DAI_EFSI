@@ -1,22 +1,22 @@
 import { useState, useEffect} from 'react'
 import { useNavigate, Outlet } from 'react-router-dom'
+import {useAuth} from './context/authContext.jsx'
 
 function App() {
 
-
   const navigate = useNavigate('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const {user} = useAuth()
 
  useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       navigate('/home');
     } else {
       navigate('/auth');
     }
-  }, [isAuthenticated]);
+  }, [user]);
   return (
     <>
-      <button onClick={() => setIsAuthenticated(!isAuthenticated)}>Autenticarme</button>
+    <h1>{user}</h1>
       <Outlet></Outlet>
     </>
   )
