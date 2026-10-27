@@ -1,11 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect} from 'react'
+import { useNavigate, Outlet } from 'react-router-dom'
 
 function App() {
 
+
+  const navigate = useNavigate('')
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+ useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home');
+    } else {
+      navigate('/auth');
+    }
+  }, [isAuthenticated]);
   return (
     <>
-      <h1>Hello World</h1>
+      <button onClick={() => setIsAuthenticated(!isAuthenticated)}>Autenticarme</button>
+      <Outlet></Outlet>
     </>
   )
 }
