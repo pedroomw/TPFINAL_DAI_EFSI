@@ -1,0 +1,122 @@
+-- =========================================
+-- 1. TABLA USERS
+-- =========================================
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    avatar TEXT,
+    bio TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- =========================================
+-- 2. TABLA LIBRARY
+-- =========================================
+
+CREATE TABLE library (
+    id SERIAL PRIMARY KEY,
+
+    user_id INTEGER NOT NULL,
+    tmdb_id BIGINT NOT NULL,
+
+    title VARCHAR(255) NOT NULL,
+    poster_path TEXT,
+
+    state VARCHAR(20) NOT NULL DEFAULT 'quiero_ver',
+
+    is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
+
+    score NUMERIC(3,1),
+
+    review TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_library_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_user_movie
+        UNIQUE (user_id, tmdb_id),
+
+    CONSTRAINT check_library_state
+        CHECK (state IN (
+            'quiero_ver',
+            'viendo',
+            'vista',
+            'abandonada'
+        )),
+
+    CONSTRAINT check_library_score
+        CHECK (score IS NULL OR (score >= 1 AND score <= 10))
+);
+
+
+-- =========================================
+-- 3. TABLA COLLECTIONS
+-- =========================================
+
+CREATE TABLE collections (
+    id SERIAL PRIMARY KEY,
+
+    user_id INTEGER NOT NULL,
+
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_collections_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+-- =========================================
+-- 4. TABLA COLLECTION_MOVIES
+-- =========================================
+
+CREATE TABLE collection_movies (
+    id SERIAL PRIMARY KEY,
+
+    collection_id INTEGER NOT NULL,
+
+    tmdb_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    poster_path TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_collection_movies_collection
+        FOREIGN KEY (collection_id)
+        REFERENCES collections(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_collection_movie
+        UNIQUE (collection_id, tmdb_id)
+);
+
+
+-- =========================================
+-- 5. INDICES PARA MEJORAR CONSULTAS
+-- =========================================
+
+CREATE INDEX idx_library_user
+ON library(user_id);
+
+CREATE INDEX idx_library_tmdb
+ON library(tmdb_id);
+
+CREATE INDEX idx_collections_user
+ON collections(user_id);
+
+CREATE INDEX idx_collection_movies_collection
+ON collection_movies(collection_id);
