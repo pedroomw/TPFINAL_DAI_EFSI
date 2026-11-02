@@ -7,11 +7,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   async function login(email, password) {
-    const data = await loginRequest(email, password);
-
-    //setUser(data.user);
-    setUser("Usuario")
-    return data;
+    try {
+      //const data = await loginRequest(email, password);
+      setUser(email);
+      return data;
+    } catch (err) {
+      throw err;
+    }
   }
 
   function logout() {

@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState} from 'react'
+import { useAuth } from '../context/authContext'
 
 const Login = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [error, setError] = useState('')
+    const auth = useAuth()
 
     const handleSubmit = async (e) => {
         e.preventDefault() 
         try {
-            await login(email, password);
+            await auth.login(email, password);
             navigate('/home', { replace: true });
         } catch (err) {
             setError(err.message);
