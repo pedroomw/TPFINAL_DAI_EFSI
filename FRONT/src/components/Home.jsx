@@ -1,6 +1,8 @@
+import Buscador from "./Buscador"
+
 const Home = () => {
     return(
-        <h1>Chau</h1>
+        <Buscador/>
     )
 }
 

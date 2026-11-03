@@ -1,5 +1,8 @@
-export async function buscarPelícula(id) {
-  const response = await fetch(`${process.env.MOVIE_BASE_URL}/?apikey=${process.env.MOVIE_API_KEY}`);
+export async function buscarPelícula(nombre) {
+  //const response = await fetch(`${process.env.MOVIE_BASE_URL}/`);
+  const response = await fetch(
+    `https://www.omdbapi.com/?apikey=60ebdf77&s=${encodeURIComponent(nombre)}`
+);
 
   const data = await response.json();
 

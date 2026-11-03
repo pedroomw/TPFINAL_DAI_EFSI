@@ -3,11 +3,9 @@ import { useAuth } from '../context/authContext'
 
 const Movielist = (peliculas) => {
     return (
-        <ul>
-           {peliculas.map((pelicula, índice) => {
-            <li key = {indice}>{pelicula}</li>
-           })}
-        </ul>
+        <>
+            <pre>{JSON.stringify(peliculas, null, 2)}</pre>
+        </>
     )
 }
 
