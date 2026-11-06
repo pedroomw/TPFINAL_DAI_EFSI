@@ -1,10 +1,22 @@
 const User = () => {
   return (
-    <div>
-      <h2>Usuario</h2>
-      <p>Nombre: Test User</p>
-    </div>
-  )
-}
+    <>
+      <header className="page-header">
+        <h1 className="page-title">Perfil</h1>
+        <span className="top-badge">Activo</span>
+      </header>
 
-export default User
+      <section className="user-card">
+        <div className="profile-row">
+          <div className="avatar">TU</div>
+          <div className="user-info">
+            <h3>Test User</h3>
+            <p>testuser@email.com</p>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+};
+
+export default User;

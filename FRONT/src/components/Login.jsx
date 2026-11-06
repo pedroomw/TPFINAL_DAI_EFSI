@@ -1,43 +1,66 @@
-import { useState} from 'react'
-import { useAuth } from '../context/authContext'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/authContext';
 
 const Login = () => {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [error, setError] = useState('')
-    const auth = useAuth()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const auth = useAuth();
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault() 
-        try {
-            await auth.login(email, password);
-            navigate('/home', { replace: true });
-        } catch (err) {
-            setError(err.message);
-        }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      await auth.login(email, password);
+      navigate('/home', { replace: true });
+    } catch (err) {
+      setError(err.message || 'No se pudo iniciar sesión');
     }
+  };
 
-    return (
-        <>
-            <form onSubmit={handleSubmit}> 
-                <input 
-                    type="text" 
-                    value={email} 
-                    placeholder="Ingresá tu email" 
-                    onChange={(e) => { setEmail(e.target.value) }} 
-                />
+  return (
+    <div className="login-wrapper">
+      <div className="login-card">
+        <div className="login-header">
+          <h1>Bienvenido</h1>
+          <p>Ingresá tus datos para continuar</p>
+        </div>
 
-                <input 
-                    type="text" 
-                    value={password} 
-                    placeholder="Ingresá tu contraseña" 
-                    onChange={(e) => { setPassword(e.target.value) }} 
-                />
-                
-                <button type="submit">Ingresar</button> 
-            </form>
-        </>
-    )
-}
+        <form className="login-form" onSubmit={handleSubmit}>
+          <label className="input-group">
+            Email
+            <input
+              className="login-input"
+              type="email"
+              value={email}
+              placeholder="usuario@email.com"
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
 
-export default Login
+          <label className="input-group">
+            Contraseña
+            <input
+              className="login-input"
+              type="password"
+              value={password}
+              placeholder="••••••••"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+
+          <p className="error-message">{error}</p>
+
+          <button className="login-submit" type="submit">
+            Ingresar
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

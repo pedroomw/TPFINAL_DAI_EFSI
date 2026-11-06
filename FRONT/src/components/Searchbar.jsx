@@ -1,28 +1,31 @@
-import { useState } from 'react'
-import { buscarPelícula } from '../services/omdbService'
+import { useState } from 'react';
+import { buscarPelícula } from '../services/omdbService';
 
 const Searchbar = ({ setPeliculas }) => {
-    const [nombre, setNombre] = useState('')
+  const [nombre, setNombre] = useState('');
 
-    const handleSearch = async (e) => {
-        e.preventDefault()
-        const respuesta = await buscarPelícula(nombre)
-        setPeliculas(respuesta)
-    }
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    const respuesta = await buscarPelícula(nombre);
+    setPeliculas(respuesta);
+  };
 
-    return (
-        <>
-            <form onSubmit={handleSearch}>
-                <input
-                    type="text"
-                    placeholder='Ingrese el nombre de la película'
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                />
-                <button type="submit">Buscar</button>
-            </form>
-        </>
-    )
-}
+  return (
+    <section className="search-panel">
+      <form className="search-form" onSubmit={handleSearch}>
+        <input
+          className="search-input"
+          type="text"
+          placeholder="Buscar película, serie o título..."
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+        <button className="primary-btn" type="submit">
+          Buscar
+        </button>
+      </form>
+    </section>
+  );
+};
 
-export default Searchbar
+export default Searchbar;

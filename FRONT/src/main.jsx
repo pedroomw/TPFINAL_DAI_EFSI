@@ -8,6 +8,7 @@ import Home from './components/Home.jsx';
 import Buscador from './components/Buscador.jsx';
 import Favoritos from './components/Favoritos.jsx';
 import User from './components/User.jsx';
+import './styles.css';
 
 const router = createBrowserRouter([
   {
