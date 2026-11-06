@@ -1,9 +1,13 @@
-import Buscador from "./Buscador"
+import { Outlet } from 'react-router-dom'
+import Sidebar from './Sidebar'
 
 const Home = () => {
     return(
-        <Buscador/>
+        <>
+            <Sidebar/>
+            <Outlet></Outlet>
+        </>
     )
 }
 
-export default Home 
+export default Home
