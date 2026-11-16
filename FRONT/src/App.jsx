@@ -1,25 +1,20 @@
-import { useState, useEffect} from 'react'
-import { useNavigate, Outlet } from 'react-router-dom'
-import {useAuth} from './context/authContext.jsx'
+import { useEffect } from 'react';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { useAuth } from './context/authContext.jsx';
 
 function App() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const navigate = useNavigate('')
-  const {user} = useAuth()
-
- useEffect(() => {
+  useEffect(() => {
     if (user) {
-      navigate('/home');
+      navigate('/home', { replace: true });
     } else {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     }
-  }, [user]);
-  return (
-    <>
-    <h1>{user}</h1>
-      <Outlet></Outlet>
-    </>
-  )
+  }, [user, navigate]);
+
+  return <Outlet />;
 }
 
-export default App
+export default App;

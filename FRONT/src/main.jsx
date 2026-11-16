@@ -5,6 +5,10 @@ import { AuthProvider } from './context/authContext.jsx';
 import App from './App.jsx';
 import Login from './components/Login.jsx';
 import Home from './components/Home.jsx';
+import Buscador from './components/Buscador.jsx';
+import Favoritos from './components/Favoritos.jsx';
+import User from './components/User.jsx';
+import './styles.css';
 
 const router = createBrowserRouter([
   {
@@ -17,7 +21,25 @@ const router = createBrowserRouter([
       },
       {
         path: 'home',
-        element: <Home />
+        element: <Home />,
+        children: [
+          {
+            index: true,
+            element: <Buscador />
+          },
+          {
+            path: 'buscador',
+            element: <Buscador />
+          },
+          {
+            path: 'favoritos',
+            element: <Favoritos />
+          },
+          {
+            path: 'user',
+            element: <User />
+          }
+        ]
       }
     ]
   }
