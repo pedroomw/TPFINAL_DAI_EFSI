@@ -1,22 +1,38 @@
+
+-- =========================================
+-- TP FINAL DAI / EFSI
+-- MY COLLECTION
+-- MIGRATION 001
+-- =========================================
+
+
 -- =========================================
 -- 1. TABLA USERS
 -- =========================================
+-- Almacena los usuarios registrados.
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+
+    username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+
     avatar TEXT,
     bio TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 
 -- =========================================
 -- 2. TABLA LIBRARY
 -- =========================================
+-- Almacena las películas de la biblioteca personal
+-- de cada usuario.
 
 CREATE TABLE library (
     id SERIAL PRIMARY KEY,
@@ -35,8 +51,10 @@ CREATE TABLE library (
 
     review TEXT,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    watched_at TIMESTAMP,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_library_user
         FOREIGN KEY (user_id)
@@ -62,6 +80,8 @@ CREATE TABLE library (
 -- =========================================
 -- 3. TABLA COLLECTIONS
 -- =========================================
+-- Almacena las colecciones personalizadas
+-- creadas por cada usuario.
 
 CREATE TABLE collections (
     id SERIAL PRIMARY KEY,
@@ -71,7 +91,7 @@ CREATE TABLE collections (
     name VARCHAR(100) NOT NULL,
     description TEXT,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_collections_user
         FOREIGN KEY (user_id)
@@ -83,6 +103,8 @@ CREATE TABLE collections (
 -- =========================================
 -- 4. TABLA COLLECTION_MOVIES
 -- =========================================
+-- Relaciona las películas con las colecciones.
+-- Una colección puede contener muchas películas.
 
 CREATE TABLE collection_movies (
     id SERIAL PRIMARY KEY,
@@ -93,7 +115,7 @@ CREATE TABLE collection_movies (
     title VARCHAR(255) NOT NULL,
     poster_path TEXT,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_collection_movies_collection
         FOREIGN KEY (collection_id)
@@ -106,17 +128,104 @@ CREATE TABLE collection_movies (
 
 
 -- =========================================
--- 5. INDICES PARA MEJORAR CONSULTAS
+-- 5. TABLA ACTIVITY
+-- =========================================
+-- Registra las acciones realizadas por cada usuario.
+-- Permite mostrar actividad reciente y consultar
+-- el historial de uso de la aplicación.
+
+CREATE TABLE activity (
+    id SERIAL PRIMARY KEY,
+
+    user_id INTEGER NOT NULL,
+
+    action VARCHAR(50) NOT NULL,
+
+    tmdb_id BIGINT,
+    title VARCHAR(255),
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_activity_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT check_activity_action
+        CHECK (action IN (
+            'pelicula_agregada',
+            'estado_modificado',
+            'favorito_agregado',
+            'favorito_quitado',
+            'puntuacion_agregada',
+            'resena_agregada',
+            'resena_modificada',
+            'coleccion_creada',
+            'coleccion_eliminada',
+            'pelicula_agregada_coleccion',
+            'pelicula_quitada_coleccion'
+        ))
+);
+
+
+-- =========================================
+-- 6. FUNCION PARA ACTUALIZAR updated_at
+-- =========================================
+-- Actualiza automáticamente la fecha de modificación
+-- cuando se modifica un usuario o una película.
+
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- =========================================
+-- 7. TRIGGERS DE ACTUALIZACION
 -- =========================================
 
-CREATE INDEX idx_library_user
-ON library(user_id);
+CREATE TRIGGER trigger_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
 
+
+CREATE TRIGGER trigger_library_updated_at
+BEFORE UPDATE ON library
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+
+-- =========================================
+-- 8. INDICES
+-- =========================================
+
+-- Biblioteca: consultas por usuario.
+-- Ya está cubierto por el índice UNIQUE (user_id, tmdb_id).
+
+-- Biblioteca: búsquedas por película TMDB.
 CREATE INDEX idx_library_tmdb
 ON library(tmdb_id);
 
+
+-- Colecciones: consultas por usuario.
 CREATE INDEX idx_collections_user
 ON collections(user_id);
 
-CREATE INDEX idx_collection_movies_collection
-ON collection_movies(collection_id);
+
+-- Actividad: historial de cada usuario.
+CREATE INDEX idx_activity_user_created
+ON activity(user_id, created_at DESC);
+
+
+-- Actividad: consultas por película.
+CREATE INDEX idx_activity_tmdb
+ON activity(tmdb_id);
+
+
+-- =========================================
+-- FIN DE MIGRATION 001
+-- =========================================
