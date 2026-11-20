@@ -1,20 +1,6 @@
-import { useEffect } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
-import { useAuth } from './context/authContext.jsx';
+// App.jsx ya no se usa como componente raíz del router.
+// La lógica de rutas está directamente en main.jsx.
+// Este archivo queda como placeholder por si se necesita en el futuro.
 
-function App() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      navigate('/home', { replace: true });
-    } else {
-      navigate('/auth', { replace: true });
-    }
-  }, [user, navigate]);
-
-  return <Outlet />;
-}
-
+const App = () => null;
 export default App;
