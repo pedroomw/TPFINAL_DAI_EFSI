@@ -1,4 +1,5 @@
 import { getLibraryByUser, addEntry, updateEntry, deleteEntry } from "../models/libraryModel.js";
+import { logActivity } from "../models/activityModel.js";
 
 const VALID_STATES = ["quiero_ver", "viendo", "vista", "abandonada"];
 
@@ -28,6 +29,9 @@ export const addToLibrary = async (req, res) => {
     if (!entry) {
       return res.status(409).json({ error: "La película ya está en tu biblioteca" });
     }
+
+    await logActivity(req.user.id, "pelicula_agregada", tmdb_id, title);
+
     res.status(201).json(entry);
   } catch (error) {
     res.status(500).json({ error: "Error al agregar a la biblioteca" });
@@ -43,7 +47,7 @@ export const updateLibraryEntry = async (req, res) => {
     if (state && !VALID_STATES.includes(state)) {
       return res.status(400).json({ error: `Estado inválido. Los válidos son: ${VALID_STATES.join(", ")}` });
     }
-    if (score !== undefined && (score < 1 || score > 10)) {
+    if (score !== undefined && score !== null && (score < 1 || score > 10)) {
       return res.status(400).json({ error: "La puntuación debe ser entre 1 y 10" });
     }
 
@@ -51,6 +55,30 @@ export const updateLibraryEntry = async (req, res) => {
     if (!entry) {
       return res.status(404).json({ error: "Película no encontrada en tu biblioteca" });
     }
+
+    // Registrar actividad según qué cambió
+    if (state) {
+      await logActivity(req.user.id, "estado_modificado", entry.tmdb_id, entry.title);
+    }
+    if (is_favorite === true) {
+      await logActivity(req.user.id, "favorito_agregado", entry.tmdb_id, entry.title);
+    }
+    if (is_favorite === false) {
+      await logActivity(req.user.id, "favorito_quitado", entry.tmdb_id, entry.title);
+    }
+    if (score !== undefined && score !== null) {
+      await logActivity(req.user.id, "puntuacion_agregada", entry.tmdb_id, entry.title);
+    }
+    if (review !== undefined && review !== null && review !== "") {
+      const isNew = !entry.review;
+      await logActivity(
+        req.user.id,
+        isNew ? "resena_agregada" : "resena_modificada",
+        entry.tmdb_id,
+        entry.title
+      );
+    }
+
     res.json(entry);
   } catch (error) {
     res.status(500).json({ error: "Error al actualizar la biblioteca" });

@@ -2,35 +2,21 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { useLibrary } from '../context/libraryContext';
-import { searchMovies } from '../services/omdbService';
 
 const Navbar = ({ onSearchResults }) => {
   const { user, logout } = useAuth();
   const { library, favorites } = useLibrary();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [searching, setSearching] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const pendingCount = library.filter((e) => e.status === 'pending').length;
+  const pendingCount = library.filter((e) => e.state === 'quiero_ver').length;
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-    setSearching(true);
-    try {
-      const results = await searchMovies(query);
-      if (onSearchResults) {
-        onSearchResults(results, query);
-      }
-      navigate('/app/buscar');
-    } catch {
-      // sin resultados, igual navega
-      if (onSearchResults) onSearchResults([], query);
-      navigate('/app/buscar');
-    } finally {
-      setSearching(false);
-    }
+    navigate(`/app/buscar?q=${encodeURIComponent(query.trim())}`);
+    setQuery('');
   };
 
   const handleLogout = () => {
@@ -63,7 +49,7 @@ const Navbar = ({ onSearchResults }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {searching && <span className="navbar-search-spinner">⟳</span>}
+
         </form>
 
         {/* Nav links – desktop */}

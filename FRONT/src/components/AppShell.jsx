@@ -1,30 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import Navbar from './Navbar';
 
 const AppShell = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [searchResults, setSearchResults] = useState([]);
-  const [lastQuery, setLastQuery] = useState('');
 
   useEffect(() => {
-    if (!user) navigate('/', { replace: true });
-  }, [user, navigate]);
+    // Solo redirigir cuando ya terminó de verificar el token
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
-  const handleSearchResults = (results, query) => {
-    setSearchResults(results);
-    setLastQuery(query);
-  };
-
+  // Mientras verifica el token, no renderizar nada
+  if (loading) return null;
   if (!user) return null;
 
   return (
     <div className="app-container">
-      <Navbar onSearchResults={handleSearchResults} />
+      <Navbar />
       <main className="app-main">
-        <Outlet context={{ searchResults, lastQuery }} />
+        <Outlet />
       </main>
     </div>
   );

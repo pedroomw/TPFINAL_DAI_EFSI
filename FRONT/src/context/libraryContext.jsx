@@ -1,126 +1,194 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './authContext.jsx';
+import {
+  fetchLibrary,
+  addToLibraryAPI,
+  updateLibraryEntryAPI,
+  removeFromLibraryAPI,
+} from '../services/libraryService.js';
 
-// ─── Shapes ─────────────────────────────────────────────────────────────────
-// libraryEntry: { imdbID, title, year, poster, type, status: 'pending'|'watched', addedAt }
-// favoriteEntry: { imdbID, title, year, poster, type, addedAt }
+/**
+ * Cada entrada de la biblioteca tiene la forma que devuelve la API:
+ * {
+ *   id, user_id, tmdb_id, title, poster_path,
+ *   state: 'quiero_ver' | 'viendo' | 'vista' | 'abandonada',
+ *   is_favorite: boolean,
+ *   score, review, watched_at, created_at, updated_at
+ * }
+ */
 
 const LibraryContext = createContext(null);
 
-// Posters via TMDB image CDN (libre de hotlinking, no requiere API key)
-const MOCK_LIBRARY = [
-  {
-    imdbID: 'tt0111161',
-    title: 'The Shawshank Redemption',
-    year: '1994',
-    poster: 'https://image.tmdb.org/t/p/w300/lyQBXzOQSuE59IsHyhrp0qIiPAz.jpg',
-    type: 'movie',
-    status: 'watched',
-    addedAt: '2024-01-10',
-  },
-  {
-    imdbID: 'tt0068646',
-    title: 'The Godfather',
-    year: '1972',
-    poster: 'https://image.tmdb.org/t/p/w300/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg',
-    type: 'movie',
-    status: 'pending',
-    addedAt: '2024-02-05',
-  },
-];
-
-const MOCK_FAVORITES = [
-  {
-    imdbID: 'tt0816692',
-    title: 'Interstellar',
-    year: '2014',
-    poster: 'https://image.tmdb.org/t/p/w300/ngl2FKBlU4fhbdsrtdom9LVLBXw.jpg',
-    type: 'movie',
-    addedAt: '2024-01-15',
-  },
-];
-
 export function LibraryProvider({ children }) {
-  const [library, setLibrary] = useState(MOCK_LIBRARY);
-  const [favorites, setFavorites] = useState(MOCK_FAVORITES);
+  const { token, user } = useAuth();
+  const [library, setLibrary] = useState([]);
+  const [libLoading, setLibLoading] = useState(false);
+
+  // ── Carga inicial cuando el usuario se loguea ──────────────────────────────
+  const loadLibrary = useCallback(async () => {
+    if (!token) return;
+    setLibLoading(true);
+    try {
+      const data = await fetchLibrary(token);
+      setLibrary(data);
+    } catch (err) {
+      console.error('Error cargando biblioteca:', err.message);
+    } finally {
+      setLibLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (user && token) {
+      loadLibrary();
+    } else {
+      // Usuario deslogueado: limpiar estado local
+      setLibrary([]);
+    }
+  }, [user, token, loadLibrary]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function getEntry(tmdbId) {
+    return library.find((e) => String(e.tmdb_id) === String(tmdbId)) || null;
+  }
+
+  function isInLibrary(tmdbId) {
+    return !!getEntry(tmdbId);
+  }
+
+  function isInFavorites(tmdbId) {
+    const entry = getEntry(tmdbId);
+    return entry ? entry.is_favorite : false;
+  }
 
   // ── Library ────────────────────────────────────────────────────────────────
 
-  function isInLibrary(imdbID) {
-    return library.some((e) => e.imdbID === imdbID);
-  }
+  async function addToLibrary(movie) {
+    if (!token) return;
+    if (isInLibrary(movie.id)) return;
 
-  function addToLibrary(movie) {
-    if (isInLibrary(movie.imdbID)) return;
     const entry = {
-      imdbID: movie.imdbID,
-      title: movie.Title || movie.title,
-      year: movie.Year || movie.year,
-      poster: movie.Poster || movie.poster,
-      type: movie.Type || movie.type || 'movie',
-      status: 'pending',
-      addedAt: new Date().toISOString().slice(0, 10),
+      tmdb_id: movie.id,
+      title: movie.title,
+      poster_path: movie.poster_path || null,
+      state: 'quiero_ver',
     };
-    setLibrary((prev) => [entry, ...prev]);
-    // TODO: await libraryService.add(entry)
+
+    try {
+      const saved = await addToLibraryAPI(token, entry);
+      setLibrary((prev) => [saved, ...prev]);
+    } catch (err) {
+      console.error('Error al agregar a la biblioteca:', err.message);
+      throw err;
+    }
   }
 
-  function removeFromLibrary(imdbID) {
-    setLibrary((prev) => prev.filter((e) => e.imdbID !== imdbID));
-    // TODO: await libraryService.remove(imdbID)
+  async function removeFromLibrary(tmdbId) {
+    if (!token) return;
+    try {
+      await removeFromLibraryAPI(token, tmdbId);
+      setLibrary((prev) => prev.filter((e) => String(e.tmdb_id) !== String(tmdbId)));
+    } catch (err) {
+      console.error('Error al eliminar de la biblioteca:', err.message);
+      throw err;
+    }
   }
 
-  function markWatched(imdbID) {
-    setLibrary((prev) =>
-      prev.map((e) => (e.imdbID === imdbID ? { ...e, status: 'watched' } : e))
-    );
-    // TODO: await libraryService.update(imdbID, { status: 'watched' })
+  async function updateEntry(tmdbId, updates) {
+    if (!token) return;
+    try {
+      const updated = await updateLibraryEntryAPI(token, tmdbId, updates);
+      setLibrary((prev) =>
+        prev.map((e) => (String(e.tmdb_id) === String(tmdbId) ? updated : e))
+      );
+      return updated;
+    } catch (err) {
+      console.error('Error al actualizar entrada:', err.message);
+      throw err;
+    }
   }
 
-  function markPending(imdbID) {
-    setLibrary((prev) =>
-      prev.map((e) => (e.imdbID === imdbID ? { ...e, status: 'pending' } : e))
-    );
-    // TODO: await libraryService.update(imdbID, { status: 'pending' })
+  // Marcar como "vista"
+  async function markWatched(tmdbId) {
+    return updateEntry(tmdbId, { state: 'vista' });
   }
 
-  // ── Favorites ──────────────────────────────────────────────────────────────
-
-  function isInFavorites(imdbID) {
-    return favorites.some((e) => e.imdbID === imdbID);
+  // Volver a "quiero ver"
+  async function markPending(tmdbId) {
+    return updateEntry(tmdbId, { state: 'quiero_ver' });
   }
 
-  function addToFavorites(movie) {
-    if (isInFavorites(movie.imdbID)) return;
-    const entry = {
-      imdbID: movie.imdbID,
-      title: movie.Title || movie.title,
-      year: movie.Year || movie.year,
-      poster: movie.Poster || movie.poster,
-      type: movie.Type || movie.type || 'movie',
-      addedAt: new Date().toISOString().slice(0, 10),
-    };
-    setFavorites((prev) => [entry, ...prev]);
-    // TODO: await favoritesService.add(entry)
+  // ── Favoritos ──────────────────────────────────────────────────────────────
+
+  /**
+   * Agregar a favoritos:
+   * - Si la película ya está en biblioteca → actualiza is_favorite = true
+   * - Si no está → la agrega primero y luego marca como favorito
+   */
+  async function addToFavorites(movie) {
+    if (!token) return;
+    if (isInFavorites(movie.id ?? movie.tmdb_id)) return;
+
+    const tmdbId = movie.id ?? movie.tmdb_id;
+
+    try {
+      if (!isInLibrary(tmdbId)) {
+        // Agregar a biblioteca y luego marcar como favorito
+        const entry = {
+          tmdb_id: tmdbId,
+          title: movie.title,
+          poster_path: movie.poster_path || null,
+          state: 'quiero_ver',
+        };
+        const saved = await addToLibraryAPI(token, entry);
+        // Ahora marcar como favorito
+        const updated = await updateLibraryEntryAPI(token, tmdbId, { is_favorite: true });
+        setLibrary((prev) => {
+          const withoutOld = prev.filter((e) => String(e.tmdb_id) !== String(tmdbId));
+          return [updated, ...withoutOld];
+        });
+      } else {
+        await updateEntry(tmdbId, { is_favorite: true });
+      }
+    } catch (err) {
+      console.error('Error al agregar a favoritos:', err.message);
+      throw err;
+    }
   }
 
-  function removeFromFavorites(imdbID) {
-    setFavorites((prev) => prev.filter((e) => e.imdbID !== imdbID));
-    // TODO: await favoritesService.remove(imdbID)
+  async function removeFromFavorites(tmdbId) {
+    if (!token) return;
+    try {
+      await updateEntry(tmdbId, { is_favorite: false });
+    } catch (err) {
+      console.error('Error al quitar de favoritos:', err.message);
+      throw err;
+    }
   }
+
+  // ── Accesos derivados ──────────────────────────────────────────────────────
+
+  // Lista de favoritos (para la página Favoritos)
+  const favorites = library.filter((e) => e.is_favorite);
 
   return (
     <LibraryContext.Provider
       value={{
         library,
         favorites,
+        libLoading,
+        getEntry,
         isInLibrary,
+        isInFavorites,
         addToLibrary,
         removeFromLibrary,
+        updateEntry,
         markWatched,
         markPending,
-        isInFavorites,
         addToFavorites,
         removeFromFavorites,
+        reloadLibrary: loadLibrary,
       }}
     >
       {children}

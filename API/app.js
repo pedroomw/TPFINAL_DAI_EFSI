@@ -12,7 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares globales
-app.use(cors());           // permite solicitudes desde el frontend
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  credentials: true,
+}));           // permite solicitudes desde el frontend
 app.use(express.json());   // parsea el body de las requests como JSON
 
 // Rutas

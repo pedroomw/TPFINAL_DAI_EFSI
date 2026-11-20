@@ -1,26 +1,57 @@
 import { useState } from 'react';
 import { useLibrary } from '../context/libraryContext';
 import MoviePoster from './MoviePoster';
+import { posterUrl } from '../services/movieService.js';
 
 const FILTERS = [
-  { value: 'all', label: 'Todas' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'watched', label: 'Vistas' },
+  { value: 'all',        label: 'Todas' },
+  { value: 'quiero_ver', label: 'Quiero ver' },
+  { value: 'viendo',     label: 'Viendo' },
+  { value: 'vista',      label: 'Vistas' },
+  { value: 'abandonada', label: 'Abandonadas' },
 ];
 
+const STATE_LABELS = {
+  quiero_ver: '⏳ Quiero ver',
+  viendo:     '▶️ Viendo',
+  vista:      '✅ Vista',
+  abandonada: '🚫 Abandonada',
+};
+
 const MiLista = () => {
-  const { library, removeFromLibrary, markWatched, markPending, addToFavorites, isInFavorites } = useLibrary();
+  const {
+    library,
+    removeFromLibrary,
+    markWatched,
+    markPending,
+    addToFavorites,
+    removeFromFavorites,
+    isInFavorites,
+  } = useLibrary();
+
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const filtered = library.filter((m) => {
-    const matchStatus = filter === 'all' || m.status === filter;
+    const matchState = filter === 'all' || m.state === filter;
     const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchSearch;
+    return matchState && matchSearch;
   });
 
-  const watched = library.filter((e) => e.status === 'watched').length;
-  const pending = library.filter((e) => e.status === 'pending').length;
+  const watched  = library.filter((e) => e.state === 'vista').length;
+  const pending  = library.filter((e) => e.state === 'quiero_ver').length;
+
+  const handleFavToggle = async (m) => {
+    try {
+      if (isInFavorites(m.tmdb_id)) {
+        await removeFromFavorites(m.tmdb_id);
+      } else {
+        await addToFavorites({ id: m.tmdb_id, title: m.title, poster_path: m.poster_path });
+      }
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
 
   return (
     <div className="page-content">
@@ -52,7 +83,9 @@ const MiLista = () => {
                 >
                   {f.label}
                   <span className="filter-count">
-                    {f.value === 'all' ? library.length : library.filter((e) => e.status === f.value).length}
+                    {f.value === 'all'
+                      ? library.length
+                      : library.filter((e) => e.state === f.value).length}
                   </span>
                 </button>
               ))}
@@ -77,49 +110,54 @@ const MiLista = () => {
           {/* Grid */}
           <div className="movie-grid">
             {filtered.map((m) => (
-              <div className="movie-card" key={m.imdbID}>
+              <div className="movie-card" key={m.tmdb_id}>
                 <div className="movie-poster-wrap">
-                  <MoviePoster src={m.poster} alt={m.title} />
+                  <MoviePoster src={posterUrl(m.poster_path)} alt={m.title} />
                   <div className="movie-status-badge">
-                    {m.status === 'watched' ? '✅ Vista' : '⏳ Pendiente'}
+                    {STATE_LABELS[m.state] || m.state}
                   </div>
                 </div>
 
                 <div className="movie-info">
                   <h3 className="movie-title">{m.title}</h3>
-                  <p className="movie-meta">{m.year} · {m.type}</p>
-                  <p className="movie-added">Agregada: {m.addedAt}</p>
+                  {m.score && (
+                    <p className="movie-meta">⭐ {m.score}/10</p>
+                  )}
+                  <p className="movie-added">
+                    Agregada: {m.created_at ? m.created_at.slice(0, 10) : '—'}
+                  </p>
                 </div>
 
                 <div className="movie-actions">
-                  {m.status === 'pending' ? (
+                  {m.state !== 'vista' ? (
                     <button
                       className="action-btn success"
-                      onClick={() => markWatched(m.imdbID)}
+                      onClick={() => markWatched(m.tmdb_id)}
                       title="Marcar como vista"
                     >
-                      ✅ Marcar vista
+                      ✅ Ya la vi
                     </button>
                   ) : (
                     <button
                       className="action-btn secondary"
-                      onClick={() => markPending(m.imdbID)}
-                      title="Mover a pendientes"
+                      onClick={() => markPending(m.tmdb_id)}
+                      title="Mover a quiero ver"
                     >
-                      ↩ Pendiente
+                      ↩ Quiero ver
                     </button>
                   )}
+
                   <button
-                    className={`action-btn fav ${isInFavorites(m.imdbID) ? 'active' : ''}`}
-                    onClick={() => addToFavorites(m)}
-                    title="Agregar a favoritos"
-                    disabled={isInFavorites(m.imdbID)}
+                    className={`action-btn fav ${isInFavorites(m.tmdb_id) ? 'active' : ''}`}
+                    onClick={() => handleFavToggle(m)}
+                    title={isInFavorites(m.tmdb_id) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                   >
-                    {isInFavorites(m.imdbID) ? '❤️' : '🤍'}
+                    {isInFavorites(m.tmdb_id) ? '❤️' : '🤍'}
                   </button>
+
                   <button
                     className="action-btn danger"
-                    onClick={() => removeFromLibrary(m.imdbID)}
+                    onClick={() => removeFromLibrary(m.tmdb_id)}
                     title="Eliminar de la lista"
                   >
                     🗑

@@ -1297,6 +1297,10 @@ button { cursor: pointer; border: none; background: none; }
 }
 .recent-status.watched { background: var(--green-dim); color: var(--green); }
 .recent-status.pending { background: rgba(245,158,11,.1); color: var(--amber); }
+.recent-status.vista     { background: var(--green-dim); color: var(--green); }
+.recent-status.quiero_ver{ background: rgba(245,158,11,.1); color: var(--amber); }
+.recent-status.viendo    { background: rgba(99,102,241,.15); color: #818cf8; }
+.recent-status.abandonada{ background: rgba(239,68,68,.1); color: #f87171; }
 
 
 /* ══════════════════════════════════════════════════════════════

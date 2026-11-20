@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useLibrary } from '../context/libraryContext';
 import MoviePoster from './MoviePoster';
+import { posterUrl } from '../services/movieService.js';
 
 const Favoritos = () => {
-  const { favorites, removeFromFavorites, addToLibrary, isInLibrary } = useLibrary();
+  const { favorites, removeFromFavorites, isInLibrary } = useLibrary();
   const [search, setSearch] = useState('');
 
   const filtered = favorites.filter((m) =>
@@ -48,33 +49,29 @@ const Favoritos = () => {
 
           <div className="movie-grid">
             {filtered.map((m) => (
-              <div className="movie-card favorite" key={m.imdbID}>
+              <div className="movie-card favorite" key={m.tmdb_id}>
                 <div className="movie-poster-wrap">
-                  <MoviePoster src={m.poster} alt={m.title} />
+                  <MoviePoster src={posterUrl(m.poster_path)} alt={m.title} />
                   <div className="fav-heart-badge">❤️</div>
                 </div>
 
                 <div className="movie-info">
                   <h3 className="movie-title">{m.title}</h3>
-                  <p className="movie-meta">{m.year} · {m.type}</p>
-                  <p className="movie-added">Guardada: {m.addedAt}</p>
+                  {m.state && (
+                    <p className="movie-meta">{m.state.replace('_', ' ')}</p>
+                  )}
+                  <p className="movie-added">
+                    Guardada: {m.created_at ? m.created_at.slice(0, 10) : '—'}
+                  </p>
                 </div>
 
                 <div className="movie-actions">
                   <button
-                    className={`action-btn ${isInLibrary(m.imdbID) ? 'secondary' : 'success'}`}
-                    onClick={() => addToLibrary(m)}
-                    disabled={isInLibrary(m.imdbID)}
-                    title="Agregar a mi lista"
-                  >
-                    {isInLibrary(m.imdbID) ? '✅ En lista' : '➕ Mi lista'}
-                  </button>
-                  <button
                     className="action-btn danger"
-                    onClick={() => removeFromFavorites(m.imdbID)}
+                    onClick={() => removeFromFavorites(m.tmdb_id)}
                     title="Quitar de favoritos"
                   >
-                    🗑
+                    🗑 Quitar favorito
                   </button>
                 </div>
               </div>

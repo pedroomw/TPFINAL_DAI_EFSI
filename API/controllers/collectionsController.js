@@ -6,6 +6,7 @@ import {
   removeMovieFromCollection,
   findCollectionByIdAndUser,
 } from "../models/collectionsModel.js";
+import { logActivity } from "../models/activityModel.js";
 
 // GET /api/collections
 export const getCollections = async (req, res) => {
@@ -27,6 +28,7 @@ export const createCollectionHandler = async (req, res) => {
     }
 
     const collection = await createCollection(req.user.id, name, description);
+    await logActivity(req.user.id, "coleccion_creada", null, name);
     res.status(201).json(collection);
   } catch (error) {
     res.status(500).json({ error: "Error al crear la colección" });
@@ -40,6 +42,7 @@ export const deleteCollectionHandler = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ error: "Colección no encontrada" });
     }
+    await logActivity(req.user.id, "coleccion_eliminada", null, deleted.name);
     res.json({ message: "Colección eliminada" });
   } catch (error) {
     res.status(500).json({ error: "Error al eliminar la colección" });
@@ -61,6 +64,7 @@ export const addMovieToCollectionHandler = async (req, res) => {
     }
 
     const movie = await addMovieToCollection(req.params.id, { tmdb_id, title, poster_path });
+    await logActivity(req.user.id, "pelicula_agregada_coleccion", tmdb_id, title);
     res.status(201).json(movie);
   } catch (error) {
     res.status(500).json({ error: "Error al agregar película a la colección" });
@@ -76,6 +80,7 @@ export const removeMovieFromCollectionHandler = async (req, res) => {
     }
 
     await removeMovieFromCollection(req.params.id, req.params.movieId);
+    await logActivity(req.user.id, "pelicula_quitada_coleccion", req.params.movieId, null);
     res.json({ message: "Película eliminada de la colección" });
   } catch (error) {
     res.status(500).json({ error: "Error al eliminar película de la colección" });

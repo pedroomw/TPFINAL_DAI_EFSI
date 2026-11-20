@@ -1,6 +1,3 @@
-// TODO: conectar con la API real cuando esté lista
-// Todos los métodos están preparados para ser descomentados en libraryContext.jsx
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function authHeaders(token) {
@@ -13,8 +10,8 @@ function authHeaders(token) {
 export async function fetchLibrary(token) {
   const res = await fetch(`${API_URL}/api/library`, { headers: authHeaders(token) });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Error al cargar biblioteca');
-  return data;
+  if (!res.ok) throw new Error(data.error || 'Error al cargar biblioteca');
+  return data; // array de entradas
 }
 
 export async function addToLibraryAPI(token, entry) {
@@ -24,25 +21,28 @@ export async function addToLibraryAPI(token, entry) {
     body: JSON.stringify(entry),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Error al agregar');
+  if (!res.ok) throw new Error(data.error || 'Error al agregar');
   return data;
 }
 
-export async function updateLibraryEntryAPI(token, imdbID, updates) {
-  const res = await fetch(`${API_URL}/api/library/${imdbID}`, {
+export async function updateLibraryEntryAPI(token, tmdbId, updates) {
+  const res = await fetch(`${API_URL}/api/library/${tmdbId}`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(updates),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Error al actualizar');
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar');
   return data;
 }
 
-export async function removeFromLibraryAPI(token, imdbID) {
-  const res = await fetch(`${API_URL}/api/library/${imdbID}`, {
+export async function removeFromLibraryAPI(token, tmdbId) {
+  const res = await fetch(`${API_URL}/api/library/${tmdbId}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
-  if (!res.ok) throw new Error('Error al eliminar');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Error al eliminar');
+  }
 }

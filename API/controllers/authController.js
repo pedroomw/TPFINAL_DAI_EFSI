@@ -34,6 +34,16 @@ export const register = async (req, res) => {
       user: { id: newUser.id, username: newUser.username, email: newUser.email },
     });
   } catch (error) {
+    console.error("[REGISTER] ERROR:", error.message, error.stack);
+    // Manejar duplicados de username o email
+    if (error.code === '23505') {
+      if (error.constraint === 'users_username_key') {
+        return res.status(409).json({ error: "El nombre de usuario ya está en uso" });
+      }
+      if (error.constraint === 'users_email_key') {
+        return res.status(409).json({ error: "El email ya está registrado" });
+      }
+    }
     res.status(500).json({ error: "Error al registrar el usuario" });
   }
 };
